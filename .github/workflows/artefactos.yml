@@ -32,7 +32,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: reporte-html
+          name: reporte-html-${{ github.run_number }}-${{ github.run_attempt }}
           path: ejercicios/M04-04-publicar-artefactos/playwright-report/ # ruta desde la raíz del repo
           retention-days: 7 # se borra a la semana (por defecto, 90 días)
 
