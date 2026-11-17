@@ -22,5 +22,5 @@ test('añade dos tareas en orden', async ({ page }) => {
     await page.getByRole('button', { name: 'Añadir' }).click();
   }
   await expect(page.getByRole('listitem')).toHaveText(['Comprar pan', 'Llamar al taller']);
-  await expect(page.locator('#contador')).toHaveText('2 tareas');
+  await expect(page.locator('#contador')).toHaveText('3 tareas');
 });
