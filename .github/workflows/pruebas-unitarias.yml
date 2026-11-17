@@ -15,8 +15,11 @@ on:
 
 jobs:
   vitest:
-    name: Vitest
+    name: Vitest (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
     steps:
       # 1. Trae el código del commit que ha disparado la ejecución
       - uses: actions/checkout@v7
@@ -24,7 +27,7 @@ jobs:
       # 2. Instala Node 22 y guarda en caché la descarga de npm (clave: package-lock.json)
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
           cache: npm
 
       # 3. Instala las dependencias de la raíz, exactamente las del package-lock.json
