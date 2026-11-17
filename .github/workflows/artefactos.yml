@@ -27,8 +27,20 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
 
-      # Sube el reporte HTML como artefacto del workflow
-      - uses: actions/upload-artifact@v7
+      # El reporte se sube siempre que el job no se haya cancelado: pasen o fallen las pruebas
+      - name: Subir el reporte HTML
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
         with:
           name: reporte-html
-          path: ejercicios/M04-04-publicar-artefactos/playwright-report/
+          path: ejercicios/M04-04-publicar-artefactos/playwright-report/ # ruta desde la raíz del repo
+          retention-days: 7 # se borra a la semana (por defecto, 90 días)
+
+      # Las trazas solo existen si algo ha fallado: se suben solo en ese caso
+      - name: Subir las trazas de los fallos
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: trazas
+          path: ejercicios/M04-04-publicar-artefactos/test-results/
+          retention-days: 7
