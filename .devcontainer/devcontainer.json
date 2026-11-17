@@ -4,7 +4,8 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": { "disableIp6tables": true },
     "ghcr.io/devcontainers/features/desktop-lite:1": { "password": "curso", "webPort": "6080" },
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/sshd:1": {}
   },
   "hostRequirements": { "cpus": 4, "memory": "8gb" },
   "forwardPorts": [3000, 6080, 9323],

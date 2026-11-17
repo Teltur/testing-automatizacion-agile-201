@@ -350,18 +350,81 @@ git commit -m "Pruebas de la API con PostgreSQL efímero en CI"
 git push
 ```
 
-<!-- SALIDA-ACTIONS: job «API con PostgreSQL» en verde: step «Initialize containers» (arranque y health del servicio db), log de «Cargar la semilla» (CREATE TABLE / INSERT 0 3), log de «Pruebas de la API» (2 passed) y step «Stop containers» al final -->
+El job **API con PostgreSQL** termina en verde con estos steps:
+
 ```text
-pendiente
+✓ API con PostgreSQL in 55s
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@v7
+  ✓ Run actions/setup-node@v7
+  ✓ Cargar la semilla
+  ✓ Instalar dependencias
+  ✓ Pruebas de la API
+  ✓ Post Run actions/setup-node@v7
+  ✓ Post Run actions/checkout@v7
+  ✓ Stop containers
+  ✓ Complete job
 ```
+
+En **Initialize containers**, el runner baja la imagen, arranca el servicio y espera a su healthcheck
+(los identificadores cambian; extracto):
+
+```text
+/usr/bin/docker pull postgres:17-alpine
+Status: Downloaded newer image for postgres:17-alpine
+/usr/bin/docker create --name …_postgres17alpine_… --network github_network_…
+/usr/bin/docker start aa50674378d4…
+aa50674378d4… Up Less than a second (health: starting)
+healthy
+```
+
+**Cargar la semilla**:
+
+```text
+CREATE TABLE
+INSERT 0 3
+```
+
+**Pruebas de la API**:
+
+```text
+Running 2 tests using 1 worker
+
+  ✓  1 tests/libros.spec.js:5:1 › el catálogo empieza con los tres libros de la semilla (46ms)
+  ✓  2 tests/libros.spec.js:16:1 › añade un libro y le da el id 4 (16ms)
+
+  2 passed (726ms)
+```
+
+**Stop containers**, al final, imprime los logs de PostgreSQL y destruye el contenedor: la base de datos
+de esta ejecución ya no existe.
 
 Lanza el [workflow](../glosario/04-ci-cd.md#workflow) otra vez (**Actions** → **Entorno efímero** → **Run workflow**): vuelve a dar `2 passed`.
 Cada job tiene su propia base de datos.
 
-<!-- SALIDA-ACTIONS: segunda ejecución de «Entorno efímero» lanzada con Run workflow, también con 2 passed -->
-```text
-pendiente
+```bash
+# Lanza otra ejecución y lista las dos últimas
+gh workflow run entorno-efimero.yml --repo "$GITHUB_REPOSITORY"
+gh run list --workflow entorno-efimero.yml --repo "$GITHUB_REPOSITORY" --limit 2
 ```
+
+```text
+completed	success	Entorno efímero	Entorno efímero	main	workflow_dispatch	44196568733	52s	2026-11-17T23:07:46Z
+completed	success	Entorno efímero en CI	Entorno efímero	main	push	44196358757	58s	2026-11-17T23:06:27Z
+```
+
+Y en la segunda, otra vez:
+
+```text
+  ✓  1 tests/libros.spec.js:5:1 › el catálogo empieza con los tres libros de la semilla (29ms)
+  ✓  2 tests/libros.spec.js:16:1 › añade un libro y le da el id 4 (14ms)
+
+  2 passed (596ms)
+```
+
+El libro que añadió la primera ejecución no está: el id vuelve a ser 4 porque la base de datos es nueva.
+(Mientras la ejecución está en curso, `gh run list` la muestra como `in_progress`.)
 
 ## Comprueba tu entendimiento
 

@@ -128,10 +128,22 @@ git commit -m "Añade el workflow de la demo"
 git push
 ```
 
-<!-- SALIDA-ACTIONS: pestaña Actions del fork tras el push: lista de ejecuciones con «Demo pipeline», el mensaje del commit, la rama y el estado -->
-```text
-pendiente
+La misma lista se consulta desde el terminal con `gh run list` (la última columna es la hora del push; el
+identificador cambia):
+
+```bash
+# Las últimas ejecuciones del fork
+gh run list --limit 3
 ```
+
+```text
+completed	success	Añade el workflow de la demo	Demo pipeline	main	push	44190391275	39s	2026-11-17T22:28:28Z
+completed	success	Pruebas en Node 22 y 24	Pruebas unitarias	main	push	44190243574	30s	2026-11-17T22:27:32Z
+completed	success	Vuelve a exigir 8 caracteres	Pruebas unitarias	main	push	44190135821	39s	2026-11-17T22:26:51Z
+```
+
+Columnas: estado, conclusión, mensaje del commit, workflow, rama, evento, identificador, duración y hora.
+Mientras corre, las dos primeras dicen `in_progress` y nada.
 
 ### 4 — Los jobs y sus logs
 
@@ -140,10 +152,54 @@ Al abrir la ejecución, la página muestra un resumen con el evento, la duració
 lista de **steps** con su duración; cada step se despliega y muestra su log, que es la misma salida que
 en el terminal. GitHub añade steps propios al principio (*Set up job*) y al final (*Post …*, *Complete job*).
 
-<!-- SALIDA-ACTIONS: página del job «Unitarias (Node 22)»: lista de steps con duración y el log desplegado de «Ejecutar las pruebas unitarias» -->
-```text
-pendiente
+Desde el terminal, `gh run view` muestra lo mismo que la página: la ejecución, sus jobs y, con `--job`,
+los steps de uno de ellos.
+
+```bash
+# Resumen de la última ejecución de la demo (el identificador sale de gh run list)
+gh run view 44190391275
+# Steps de un job concreto
+gh run view --job=134417922869
 ```
+
+```text
+✓ main Demo pipeline · 44190391275
+Triggered via push less than a minute ago
+
+JOBS
+✓ Unitarias (Node 22) in 26s (ID 134417922869)
+✓ Unitarias (Node 24) in 36s (ID 134417923375)
+
+✓ Unitarias (Node 22) in 26s (ID 134417922869)
+  ✓ Set up job
+  ✓ Descargar el código
+  ✓ Instalar Node.js 22
+  ✓ Instalar dependencias
+  ✓ Ejecutar las pruebas unitarias
+  ✓ Post Instalar Node.js 22
+  ✓ Post Descargar el código
+  ✓ Complete job
+```
+
+Y el log desplegado del step **Ejecutar las pruebas unitarias**:
+
+```text
+Run npx vitest run
+npx vitest run
+shell: /usr/bin/bash -e {0}
+
+ RUN  v5.1.0 /home/runner/work/testing-automatizacion-agile-201/testing-automatizacion-agile-201/ejercicios/M04-00-un-pipeline-de-pruebas
+
+ ✓ tests/carrito.test.js (3 tests) 3ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  22:28:53
+   Duration  119ms (transform 53%, import 28%, worker 10%, tests 9%)
+```
+
+Los steps llevan el `name` que les da el workflow; GitHub añade *Set up job*, los *Post …* (limpieza de
+cada acción) y *Complete job*. La ruta `/home/runner/work/…` es la copia del repositorio en el runner.
 
 El log de *Ejecutar las [pruebas unitarias](../glosario/01-fundamentos.md#prueba-unitaria)* termina con el resumen de Vitest. Como el runner no es un
 terminal interactivo, Vitest muestra solo el resumen (`Test Files  1 passed (1)`, `Tests  3 passed (3)`)
@@ -199,8 +255,8 @@ AssertionError: expected 0.30000000000000004 to be 0.3 // Object.is equality
 ```
 
 Con esa rama subida y un pull request abierto contra `main` **del propio fork**, la página del pull
-request muestra en su parte inferior la caja de **[checks](../glosario/04-ci-cd.md#check)**: una línea por job
-(`Demo pipeline / Unitarias (Node 22) (pull_request)`, la de Node 24) con su estado y un enlace
+request muestra en su parte inferior la caja de **[checks](../glosario/04-ci-cd.md#check)**: una línea por job y evento
+(`Demo pipeline/Unitarias (Node 22) (push)`, `… (pull_request)`, y las de Node 24) con su estado y un enlace
 **Details** al log. El job en rojo dice, sin abrir ningún terminal, qué prueba ha fallado y por qué.
 
 ```bash
@@ -211,9 +267,52 @@ git push -u origin quitar-redondeo
 gh pr create --repo "$GITHUB_REPOSITORY" --base main --title "Quita el redondeo del total" --body "Demo M04-00"
 ```
 
-<!-- SALIDA-ACTIONS: caja de checks del pull request con los dos jobs en rojo («Some checks were not successful» o el texto que muestre) y el log del job tras pulsar Details -->
+La caja de checks dice **Some checks were not successful** y lista **cuatro** líneas, no dos: el push de
+la rama `quitar-redondeo` dispara una ejecución (`push`) y abrir el pull request, otra (`pull_request`).
+Desde el terminal:
+
+```bash
+# Estado de los checks del pull request (el número sale de gh pr create)
+gh pr checks 1
+```
+
 ```text
-pendiente
+Some checks were not successful
+2 cancelled, 2 failing, 0 successful, 0 skipped, and 0 pending checks
+
+   NAME                                             DESCRIPTION  ELAPSED  URL
+X  Demo pipeline/Unitarias (Node 22) (push)                      21s      https://github.com/…
+X  Demo pipeline/Unitarias (Node 24) (pull_requ...               22s      https://github.com/…
+-  Demo pipeline/Unitarias (Node 22) (pull_requ...               22s      https://github.com/…
+-  Demo pipeline/Unitarias (Node 24) (push)                      25s      https://github.com/…
+```
+
+En cada ejecución falla un job y el otro aparece cancelado (`-`): con la matriz, en cuanto un job falla
+GitHub cancela los demás (`fail-fast`). Al pulsar **Details** en una línea en rojo, el log del step de
+pruebas:
+
+```text
+ RUN  v5.1.0 /home/runner/work/testing-automatizacion-agile-201/testing-automatizacion-agile-201/ejercicios/M04-00-un-pipeline-de-pruebas
+
+ ❯ tests/carrito.test.js (3 tests | 1 failed) 7ms
+   ❯ totalCarrito (3)
+     ✓ un carrito vacío suma 0 1ms
+     ✓ multiplica precio por cantidad 0ms
+     × redondea a céntimos 4ms
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+
+Error: AssertionError: expected 0.30000000000000004 to be 0.3 // Object.is equality
+
+- Expected
++ Received
+
+- 0.3
++ 0.30000000000000004
+
+ ❯ tests/carrito.test.js:14:58
+
+Error: Process completed with exit code 1.
 ```
 
 Sin una regla en la rama, el botón de fusionar sigue disponible aunque el check esté en rojo: el check

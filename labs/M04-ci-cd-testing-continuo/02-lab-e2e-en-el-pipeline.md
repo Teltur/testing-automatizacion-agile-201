@@ -50,7 +50,7 @@ Abre [`playwright.config.js`](../../ejercicios/M04-02-e2e-en-el-pipeline/playwri
 editor: tiene `baseURL` (`http://localhost:3402`) y un proyecto Chromium, y nada que arranque la app.
 
 ```js
-// Configuración de partida del lab M04-02: funciona en tu máquina si la app ya está arrancada.
+// Configuración del lab M04-02 preparada para CI: arranca la app y se endurece cuando CI=true.
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
@@ -156,7 +156,7 @@ El runner es otra máquina con otras reglas. Sustituye la configuración entera 
 endurecerse allí y seguir cómoda en tu terminal:
 
 ```js
-// Configuración de partida del lab M04-02: funciona en tu máquina si la app ya está arrancada.
+// Configuración del lab M04-02 preparada para CI: arranca la app y se endurece cuando CI=true.
 import { defineConfig, devices } from '@playwright/test';
 
 const enCI = !!process.env.CI; // GitHub Actions define CI=true en todos los jobs
@@ -274,10 +274,43 @@ En **Actions**, abre la ejecución de **E2E** y el job **Playwright**. Despliega
 **Run npx playwright install --with-deps chromium** (descarga e instalación de paquetes) y
 **Run npx playwright test** (la misma salida del paso 4).
 
-<!-- SALIDA-ACTIONS: job «Playwright» del workflow E2E en verde: steps con su duración y el log de «Run npx playwright test» con la anotación «🎭 Playwright Run Summary» en el resumen -->
+El job **Playwright** termina en verde (los identificadores y tiempos cambian). Sus steps, con la
+duración que muestra la página del job:
+
 ```text
-pendiente
+✓ Playwright in 45s
+  ✓ Set up job                                        1s
+  ✓ Run actions/checkout@v7                           1s
+  ✓ Run actions/setup-node@v7                         2s
+  ✓ Run npm ci                                        19s
+  ✓ Run npx playwright install --with-deps chromium   19s
+  ✓ Run npx playwright test                           2s
+  ✓ Post Run actions/setup-node@v7                    0s
+  ✓ Post Run actions/checkout@v7                      0s
+  ✓ Complete job                                      0s
 ```
+
+Log del step **Run npx playwright test**:
+
+```text
+Running 3 tests using 1 worker
+
+  ✓  1 [chromium] › tests/conversor.spec.js:7:1 › la página muestra el conversor (145ms)
+  ✓  2 [chromium] › tests/conversor.spec.js:12:1 › convierte 100 °C en 212 °F (143ms)
+  ✓  3 [chromium] › tests/conversor.spec.js:18:1 › convierte -40 °C en -40 °F (134ms)
+
+  3 passed (1.3s)
+##[notice]  3 passed (1.3s)
+```
+
+La línea `##[notice]` es la que escribe el reporter `github`: en el resumen de la ejecución aparece como
+la anotación **🎭 Playwright Run Summary** con `3 passed (1.3s)`. Las pruebas tardan 2 s; casi todo el job
+es preparar la máquina (`npm ci` y la instalación de Chromium).
+
+> [!WARNING]
+> Si copias a la carpeta del ejercicio el fichero `solucion/playwright.config.js` en vez de editar el tuyo,
+> el job falla con `Error: Process from config.webServer was not able to start` y `Cannot find module
+> '…/ejercicios/app/server.mjs'`: ese fichero lleva rutas `../` para ejecutarse desde `solucion/`.
 
 Fíjate en la duración de cada step: la instalación de Chromium con sus dependencias suele pesar más que
 las propias pruebas. Es el coste de partir de una máquina vacía.
@@ -438,10 +471,33 @@ git push
 gh workflow run e2e-contenedor.yml
 ```
 
-<!-- SALIDA-ACTIONS: ejecución de «E2E en contenedor» en verde: step «Initialize containers» (descarga de la imagen) y duración total, comparada con la del workflow «E2E» -->
 ```text
-pendiente
+✓ main E2E en contenedor · 44191327281
+Triggered via workflow_dispatch about 1 minute ago
+
+✓ Playwright (imagen oficial) in 1m12s
+  ✓ Set up job                    1s
+  ✓ Initialize containers         32s
+  ✓ Run actions/checkout@v7       2s
+  ✓ Run npm ci                    24s
+  ✓ Run npx playwright test       2s
+  ✓ Post Run actions/checkout@v7  0s
+  ✓ Stop containers               7s
+  ✓ Complete job                  0s
 ```
+
+Dentro de **Initialize containers**, el runner descarga la imagen:
+
+```text
+/usr/bin/docker pull mcr.microsoft.com/playwright:v1.65.1-noble
+v1.65.1-noble: Pulling from playwright
+…
+Status: Downloaded newer image for mcr.microsoft.com/playwright:v1.65.1-noble
+```
+
+Ya no hay step de instalación de navegadores, pero el job ha tardado **1m12s** frente a **45s** del
+workflow **E2E**: descargar la imagen (32 s) cuesta más que instalar solo Chromium (19 s). La imagen
+gana en reproducibilidad (mismas librerías del sistema que en tu contenedor de pruebas), no en velocidad.
 
 El tiempo no desaparece: se mueve de instalar Chromium a descargar la imagen (*Initialize containers*).
 Lo que se gana es que el entorno es **idéntico** en cada ejecución y en cualquier máquina que use la

@@ -319,10 +319,58 @@ Los steps del job:
         run: docker compose down
 ```
 
-<!-- SALIDA-ACTIONS: ejecución de «Pruebas en contenedores» en verde: log de «Run docker compose up --exit-code-from pruebas» (descarga de imágenes, logs de tablon-1 y pruebas-1, 2 passed) y del step docker compose down -->
+La ejecución de **Pruebas en contenedores** termina en verde. Log del step **Run docker compose up
+--exit-code-from pruebas** (sin las líneas de descarga de capas; el identificador de la máquina y los
+tiempos cambian):
+
 ```text
-pendiente
+ Image mcr.microsoft.com/playwright:v1.65.1-noble Pulling
+ Image node:22-alpine Pulling
+ Image node:22-alpine Pulled
+ Image mcr.microsoft.com/playwright:v1.65.1-noble Pulled
+ Network m04-06_default Creating
+ Network m04-06_default Created
+ Container m04-06-tablon-1 Creating
+ Container m04-06-tablon-1 Created
+ Container m04-06-pruebas-1 Creating
+ Container m04-06-pruebas-1 Created
+Attaching to pruebas-1, tablon-1
+ Container m04-06-tablon-1 Starting
+ Container m04-06-tablon-1 Started
+tablon-1  | Tablón en http://localhost:3406 (máquina bb96e352f083)
+ Container m04-06-tablon-1 Healthy
+ Container m04-06-pruebas-1 Starting
+ Container m04-06-pruebas-1 Started
+pruebas-1  |
+pruebas-1  | Running 2 tests using 1 worker
+pruebas-1  |
+pruebas-1  |   ✓  1 [chromium] › tests/tablon.spec.js:3:1 › muestra el tablón con sus dos avisos (137ms)
+pruebas-1  |   → Servido por bb96e352f083
+pruebas-1  |   ✓  2 [chromium] › tests/tablon.spec.js:9:1 › dice qué máquina lo sirve (69ms)
+pruebas-1  |
+pruebas-1  |   2 passed (727ms)
+ Compose Stopping Aborting on container exit...
+pruebas-1 exited with code 0
+ Container m04-06-pruebas-1 Stopping
+ Container m04-06-pruebas-1 Stopped
+ Container m04-06-tablon-1 Stopping
+ Container m04-06-tablon-1 Stopped
+tablon-1 exited with code 143
 ```
+
+Y el del step **Run docker compose down**:
+
+```text
+ Container m04-06-pruebas-1 Removing
+ Container m04-06-pruebas-1 Removed
+ Container m04-06-tablon-1 Removing
+ Container m04-06-tablon-1 Removed
+ Network m04-06_default Removing
+ Network m04-06_default Removed
+```
+
+Es la misma secuencia que en tu Codespace: `Healthy` antes de arrancar las pruebas, `exited with code 0`
+de `pruebas` (el código que recoge el job) y `143` del tablón, que Compose para al terminar.
 
 ## Comprueba tu entendimiento
 

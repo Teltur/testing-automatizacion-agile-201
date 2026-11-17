@@ -97,10 +97,26 @@ git push
 **Resultado esperado:** en **Actions**, la ejecución de **Artefactos** termina en verde y, al final de la
 página de la ejecución, la sección **Artifacts** lista `reporte-html` con su tamaño.
 
-<!-- SALIDA-ACTIONS: página de la ejecución de «Artefactos» en verde con la sección Artifacts (nombre reporte-html, tamaño, caducidad) -->
-```text
-pendiente
+Desde el terminal, `gh run view` lista los artefactos al final (el identificador cambia):
+
+```bash
+# Resumen de la última ejecución del workflow de artefactos
+gh run view $(gh run list --workflow artefactos.yml --limit 1 --json databaseId --jq '.[0].databaseId')
 ```
+
+```text
+✓ main Artefactos · 44191671719
+Triggered via push less than a minute ago
+
+JOBS
+✓ E2E con reporte in 50s (ID 134422395422)
+
+ARTIFACTS
+reporte-html
+```
+
+En la página de la ejecución, la sección **Artifacts** muestra `reporte-html` con su tamaño (unos
+190 KB) y la fecha en que caduca: sin `retention-days`, a los 90 días.
 
 ### 3 — Romper una prueba y ver qué se pierde
 
@@ -163,10 +179,27 @@ git push
 y el step **Run actions/upload-artifact@v7** aparece **saltado** (icono gris). La sección **Artifacts** no
 tiene nada: el reporte del fallo se ha perdido con la máquina.
 
-<!-- SALIDA-ACTIONS: ejecución de «Artefactos» en rojo: step de pruebas fallido, step de upload-artifact saltado y sección Artifacts vacía -->
+Los steps del job, con `gh run view --job=<ID>` (o en la página del job):
+
 ```text
-pendiente
+X E2E con reporte
+  ✓ Set up job
+  ✓ Run actions/checkout@v7
+  ✓ Run actions/setup-node@v7
+  ✓ Run npm ci
+  ✓ Run npx playwright install --with-deps chromium
+  X Run npx playwright test
+  - Run actions/upload-artifact@v7
+  - Post Run actions/setup-node@v7
+  ✓ Post Run actions/checkout@v7
+  ✓ Complete job
+
+ANNOTATIONS
+X Process completed with exit code 1.
 ```
+
+El `-` delante de **Run actions/upload-artifact@v7** es el step saltado, y la ejecución no tiene sección
+**Artifacts**: el reporte que explicaba el fallo se ha quedado en la máquina, que ya no existe.
 
 ### 4 — Subir el reporte pase lo que pase, y las trazas si algo falla
 
@@ -209,10 +242,35 @@ git push
 **Resultado esperado:** la ejecución sigue en rojo (la prueba sigue rota), pero los dos steps de subida se
 ejecutan y **Artifacts** lista `reporte-html` y `trazas`.
 
-<!-- SALIDA-ACTIONS: ejecución en rojo con los steps «Subir el reporte HTML» y «Subir las trazas de los fallos» ejecutados (log de upload-artifact con «Artifact … has been successfully uploaded!») y la sección Artifacts con reporte-html y trazas -->
 ```text
-pendiente
+X E2E con reporte in 43s
+  ✓ Set up job
+  ✓ Run actions/checkout@v7
+  ✓ Run actions/setup-node@v7
+  ✓ Run npm ci
+  ✓ Run npx playwright install --with-deps chromium
+  X Run npx playwright test
+  ✓ Subir el reporte HTML
+  ✓ Subir las trazas de los fallos
+  - Post Run actions/setup-node@v7
+  ✓ Post Run actions/checkout@v7
+  ✓ Complete job
 ```
+
+Log de **Subir las trazas de los fallos** (los identificadores y el resumen SHA256 cambian):
+
+```text
+Run actions/upload-artifact@v7
+With the provided path, there will be 2 files uploaded
+Artifact name is valid!
+Uploading artifact: trazas.zip
+Uploaded bytes 33615
+Finished uploading artifact content to blob storage!
+Artifact trazas has been successfully uploaded! Final size is 33615 bytes.
+```
+
+La sección **Artifacts** lista ahora `reporte-html` (unos 650 KB: el reporte de un fallo incluye la
+traza) y `trazas` (unos 33 KB: `trace.zip` y `error-context.md`).
 
 ### 5 — Descargar el artefacto en el Codespace
 
@@ -224,10 +282,16 @@ ves las ejecuciones y su identificador:
 gh run list --workflow artefactos.yml --limit 3
 ```
 
-<!-- SALIDA-ACTIONS: salida de `gh run list --workflow artefactos.yml --limit 3` en el Codespace (columnas STATUS, TITLE, WORKFLOW, BRANCH, EVENT, ID, ELAPSED, AGE) -->
 ```text
-pendiente
+STATUS  TITLE                                       WORKFLOW    BRANCH  EVENT  ID           ELAPSED  AGE
+X       Sube reporte y trazas también cuando fa...  Artefactos  main    push   44192658437  46s      about 1 minute ago
+X       Rompe una prueba para ver los artefactos    Artefactos  main    push   44191864873  4m14s    about 6 minutes ago
+✓       Workflow de artefactos (versión de part...  Artefactos  main    push   44191671719  52s      about 7 minutes ago
 ```
+
+El `ID` de la primera fila es el de la última ejecución, la que tiene el artefacto `trazas`. La duración
+de cada ejecución varía: la instalación de dependencias del sistema (`--with-deps`) puede tardar de
+20 s a más de 3 minutos según el runner.
 
 ```bash
 # Descarga el artefacto «trazas» de la ejecución indicada a la carpeta descargas/
@@ -235,10 +299,13 @@ gh run download <ID> --name trazas --dir descargas
 find descargas -type f
 ```
 
-<!-- SALIDA-ACTIONS: salida de `gh run download <ID> --name trazas --dir descargas` y de `find descargas -type f` (se espera descargas/tareas-añade-dos-tareas-en-orden-chromium/error-context.md y trace.zip; .last-run.json no se sube por ser oculto) -->
 ```text
-pendiente
+descargas/tareas-añade-dos-tareas-en-orden-chromium/trace.zip
+descargas/tareas-añade-dos-tareas-en-orden-chromium/error-context.md
 ```
+
+`gh run download` no escribe nada si todo va bien; `find` muestra los dos ficheros que subió el step.
+`.last-run.json` no está: `upload-artifact` excluye los ficheros ocultos.
 
 El artefacto tiene la misma estructura que tu `test-results/` local, sin `.last-run.json`:
 `upload-artifact` deja fuera los ficheros ocultos salvo que pongas `include-hidden-files: true`.
@@ -313,7 +380,7 @@ lo subes.
 **Pistas:** las expresiones `${{ github.run_number }}` y `${{ github.run_attempt }}` se pueden usar dentro
 de `name:`.
 
-**Lo que buscas:** en **Artifacts**, nombres como `reporte-html-12-1` y, tras pulsar **Re-run jobs**,
+**Lo que buscas:** en **Artifacts**, un nombre como `reporte-html-12-1` y, tras pulsar **Re-run jobs**,
 `reporte-html-12-2` en el nuevo intento.
 
 <details>
@@ -329,10 +396,23 @@ de `name:`.
           retention-days: 7
 ```
 
-<!-- SALIDA-ACTIONS: sección Artifacts con nombres reporte-html-<run_number>-1 y, tras Re-run jobs, reporte-html-<run_number>-2 -->
-```text
-pendiente
+Con el nombre nuevo y después de pulsar **Re-run jobs** en la misma ejecución:
+
+```bash
+# Artefactos de la última ejecución, tras el segundo intento
+gh run view $(gh run list --workflow artefactos.yml --limit 1 --json databaseId --jq '.[0].databaseId')
 ```
+
+```text
+ARTIFACTS
+reporte-html-4-2
+trazas
+```
+
+`4` es el `run_number` (cuarta ejecución de **Artefactos**) y `2`, el intento. El artefacto del primer
+intento (`reporte-html-4-1`) ya no está: al repetir una ejecución, GitHub sustituye los artefactos del
+intento anterior. Por eso el número de intento en el nombre dice a qué intento corresponde lo que
+descargas.
 
 `run_number` cuenta las ejecuciones del workflow y `run_attempt` los [reintentos](../glosario/02-e2e.md#reintento) de la misma ejecución:
 juntos identifican de qué intento es cada evidencia. **La regla:** una evidencia sin identificar no sirve

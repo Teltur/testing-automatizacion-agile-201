@@ -168,16 +168,32 @@ git push
 
 **Resultado esperado:** en **Actions**, una ejecución de **Calidad PR** en verde con el job `suite-rapida`.
 
-<!-- SALIDA-ACTIONS: ejecución de «Calidad PR» en verde (evento push a main) con el job suite-rapida y el log de «Run npx playwright test --grep @smoke» -->
 ```text
-pendiente
+✓ main Calidad PR · 44194179206
+Triggered via push about 1 minute ago
+
+JOBS
+✓ suite-rapida in 51s
 ```
+
+Log del step **Run npx playwright test --grep @smoke** (los tiempos cambian):
+
+```text
+Running 2 tests using 1 worker
+
+  ✓  1 [chromium] › tests/panel.spec.js:11:1 › la portada carga @smoke (144ms)
+  ✓  2 [chromium] › tests/panel.spec.js:16:1 › ana inicia sesión @smoke (156ms)
+
+  2 passed (1.3s)
+```
+
+Solo corren las dos pruebas `@smoke`: la suite que hará de puerta tarda un segundo y medio.
 
 ### 4 — Crear el ruleset de `main`
 
 Ahora la regla. En la web de tu fork:
 
-1. Pulsa **Settings** → en el menú de la izquierda, **Rules** → **Rulesets**.
+1. Pulsa **Settings** → en el menú de la izquierda, **Rulesets** (dentro de *Code, planning, and automation*).
 2. Pulsa **New ruleset** → **New branch ruleset**.
 3. En **Ruleset Name**, escribe `main protegida`.
 4. En **Enforcement status**, elige **Active**.
@@ -190,10 +206,23 @@ Ahora la regla. En la web de tu fork:
 **Resultado esperado:** la lista de rulesets muestra `main protegida` como **Active** y aplicada a la rama
 por defecto.
 
-<!-- SALIDA-ACTIONS: formulario del ruleset con los nombres exactos de las opciones (Enforcement status, Target branches, Require a pull request before merging, Require status checks to pass, Add checks) y la lista de rulesets con «main protegida» activo -->
-```text
-pendiente
-```
+El formulario **New branch ruleset**, de arriba abajo, con lo que hay que tocar:
+
+| Sección | Qué pones |
+|---------|-----------|
+| **Ruleset Name** | `main protegida` |
+| **Enforcement status** | **Active** (por defecto viene **Disabled**) |
+| **Target branches** → **Add target** | **Include default branch** (aparece `Include: Default`) |
+| **Branch rules** → **Require a pull request before merging** | Marcado; **Required approvals** se queda en `0` |
+| **Branch rules** → **Require status checks to pass** → **Add checks** | Escribe `suite-rapida` y elige la entrada **suite-rapida** marcada **GitHub Actions** |
+
+**Restrict deletions** y **Block force pushes** ya vienen marcados: déjalos. Al pulsar **Create**, GitHub
+puede pedirte que confirmes tu identidad (**Confirm access**) con tu contraseña o tu passkey. Después, la
+lista **Rulesets** muestra `main protegida` como activo.
+
+> [!TIP]
+> Si **Add checks** no encuentra `suite-rapida`, es que todavía no se ha ejecutado en tu fork: vuelve al
+> paso 3 y comprueba que la ejecución de **Calidad PR** terminó.
 
 > [!NOTE]
 > A partir de ahora `git push` directo a `main` se rechaza: los cambios entran por pull request. Si quieres
@@ -249,18 +278,48 @@ gh pr create --repo "$GITHUB_REPOSITORY" --base main --head romper-smoke \
 `$GITHUB_REPOSITORY` lo define el Codespace con `<tu-usuario>/testing-automatizacion-agile-201`; sin
 `--repo`, `gh` propondría abrir el pull request contra el repositorio original.
 
-<!-- SALIDA-ACTIONS: salida de `gh pr create` (URL del pull request) -->
 ```text
-pendiente
+https://github.com/<tu-usuario>/testing-automatizacion-agile-201/pull/2
 ```
+
+`gh pr create` solo imprime la URL del pull request; el número depende de cuántos hayas abierto antes.
 
 Abre la URL. Al terminar el check, la caja de fusión muestra `suite-rapida` en rojo como **Required** y el
 botón de fusionar bloqueado.
 
-<!-- SALIDA-ACTIONS: caja de fusión del pull request con el check suite-rapida fallido marcado como Required y el mensaje de fusión bloqueada («Merging is blocked» o el texto exacto) -->
+La caja de fusión del pull request, cuando el check termina:
+
 ```text
-pendiente
+All checks have failed
+1 failing check
+
+Calidad PR / suite-rapida (pull_request)    Failing after 1m    Required
+
+[ Merge pull request ]   (deshabilitado)
+Merging is blocked due to failing merge requirements
 ```
+
+Lo mismo desde el terminal:
+
+```bash
+# El check y el intento de fusionar
+gh pr checks 2 --repo "$GITHUB_REPOSITORY"
+gh pr merge 2 --repo "$GITHUB_REPOSITORY" --merge
+```
+
+```text
+Some checks were not successful
+0 cancelled, 1 failing, 0 successful, 0 skipped, and 0 pending checks
+
+   NAME                                    DESCRIPTION  ELAPSED  URL
+X  Calidad PR/suite-rapida (pull_request)               1m1s     https://github.com/…
+X Pull request <tu-usuario>/testing-automatizacion-agile-201#2 is not mergeable: the base branch policy prohibits the merge.
+To have the pull request merged after all the requirements have been met, add the `--auto` flag.
+To use administrator privileges to immediately merge the pull request, add the `--admin` flag.
+```
+
+`Required` es la etiqueta que pone el ruleset. La última línea avisa de que, como dueño del fork, podrías
+saltarte la regla con `--admin`: en un equipo real ese permiso lo tiene muy poca gente.
 
 ### 6 — Arreglar y fusionar
 
@@ -277,10 +336,17 @@ git push
 **Resultado esperado:** en local, `2 passed`. En el pull request, el check se vuelve a ejecutar, queda en
 verde y el botón **Merge pull request** se habilita. Fusiona.
 
-<!-- SALIDA-ACTIONS: caja de fusión del pull request con suite-rapida en verde y el botón Merge pull request habilitado -->
 ```text
-pendiente
+All checks have passed
+1 successful check
+
+Calidad PR / suite-rapida (pull_request)    Successful in 43s    Required
+
+[ Merge pull request ]   (habilitado)
 ```
+
+El check se ha vuelto a ejecutar con el push a la rama (`gh pr checks 2` dice `All checks were
+successful`) y el botón ya fusiona. Pulsa **Merge pull request** → **Confirm merge**.
 
 ```bash
 # Vuelve a main y trae la fusión
@@ -345,10 +411,37 @@ o desde el terminal:
 gh workflow run suite-nocturna.yml --repo "$GITHUB_REPOSITORY"
 ```
 
-<!-- SALIDA-ACTIONS: salida de `gh pr merge … --merge` y de `gh workflow run suite-nocturna.yml`, y la ejecución de «Suite nocturna» (evento workflow_dispatch) en verde con 6 passed en el log -->
-```text
-pendiente
+`gh pr merge` y `gh workflow run` no imprimen nada cuando terminan bien. Comprueba la fusión y la
+ejecución lanzada a mano:
+
+```bash
+# Estado del pull request y última ejecución de la suite nocturna
+gh pr view suite-nocturna --repo "$GITHUB_REPOSITORY" --json state --jq .state
+gh run list --workflow suite-nocturna.yml --repo "$GITHUB_REPOSITORY" --limit 1
 ```
+
+```text
+MERGED
+completed	success	Suite nocturna	Suite nocturna	main	workflow_dispatch	44195251166	3m13s	2026-11-17T22:59:17Z
+```
+
+El evento es `workflow_dispatch` (lanzada a mano). Log del step **Run npx playwright test** (los tiempos
+cambian):
+
+```text
+Running 6 tests using 1 worker
+
+  ✓  1 [chromium] › tests/panel.spec.js:11:1 › la portada carga @smoke (100ms)
+  ✓  2 [chromium] › tests/panel.spec.js:16:1 › ana inicia sesión @smoke (113ms)
+  ✓  3 [chromium] › tests/panel.spec.js:22:1 › una contraseña incorrecta no deja entrar (107ms)
+  ✓  4 [chromium] › tests/panel.spec.js:28:1 › un usuario desconocido no deja entrar (104ms)
+  ✓  5 [chromium] › tests/panel.spec.js:33:1 › genera el informe mensual (2.4s)
+  ✓  6 [chromium] › tests/panel.spec.js:39:1 › genera el informe anual (3.4s)
+
+  6 passed (8.7s)
+```
+
+Las dos pruebas de informes (casi 6 s entre las dos) son las que se quedan fuera de la suite rápida.
 
 ## Comprueba tu entendimiento
 
@@ -370,10 +463,18 @@ commit local:
 git reset --hard origin/main
 ```
 
-<!-- SALIDA-ACTIONS: salida del git push rechazado a main con el ruleset activo (GH013 y el motivo) -->
 ```text
-pendiente
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: Review all repository rules at https://github.com/<tu-usuario>/testing-automatizacion-agile-201/rules?ref=refs%2Fheads%2Fmain
+remote:
+remote: - Changes must be made through a pull request.
+remote:
+remote: - Required status check "suite-rapida" is expected.
+remote:
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
 ```
+
+GitHub lista cada regla que el push incumple: no viene de un pull request y no trae el check exigido.
 
 **La etiqueta decide la suite**
 Quita `{ tag: '@smoke' }, ` de `la portada carga` y lista la suite rápida:
@@ -398,10 +499,21 @@ Predice qué verás en un pull request que solo cambia un fichero de otro módul
 tuviera un filtro `paths` con la carpeta del ejercicio. Añade el filtro en una rama, abre un pull request
 que cambie solo `ejercicios/M04-00-un-pipeline-de-pruebas/README.md` y mira la caja de fusión.
 
-<!-- SALIDA-ACTIONS: caja de fusión con el check requerido suite-rapida en «Expected — Waiting for status to be reported» porque el workflow no se ha ejecutado -->
+La caja de fusión de ese pull request:
+
 ```text
-pendiente
+Some checks haven't completed yet
+1 expected, 4 successful checks
+
+suite-rapida    Expected — Waiting for status to be reported    Required
+Demo pipeline / Unitarias (Node 22) (pull_request)    Successful in 27s
+…
+
+[ Merge pull request ]   (deshabilitado)
 ```
+
+Los checks de otros workflows pasan, pero `suite-rapida` no se ha ejecutado (el cambio no toca la carpeta
+del filtro) y la regla lo sigue esperando.
 
 El check obligatorio nunca llega y el pull request queda bloqueado para siempre. Cierra ese pull request
 sin fusionarlo.

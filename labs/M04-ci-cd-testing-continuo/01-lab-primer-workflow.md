@@ -84,10 +84,19 @@ vez y vale para todo el módulo.
 
 **Resultado esperado:** la pestaña **Actions** ya no muestra el aviso de forks.
 
-<!-- SALIDA-ACTIONS: qué muestra la pestaña Actions de un fork recién creado del curso (aviso de forks con el botón, o «Get started with GitHub Actions») y la pantalla tras habilitar -->
-```text
-pendiente
+Como el repositorio del curso no trae workflows, en un fork recién creado Actions suele estar ya
+habilitado. Lo compruebas desde el terminal del Codespace:
+
+```bash
+# Permisos de Actions de tu fork ($GITHUB_REPOSITORY es usuario/repositorio en el Codespace)
+gh api repos/$GITHUB_REPOSITORY/actions/permissions
 ```
+
+```text
+{"enabled":true,"allowed_actions":"all","sha_pinning_required":false}
+```
+
+`"enabled":true`: los workflows que subas se ejecutarán.
 
 ### 3 — Escribir el workflow
 
@@ -177,9 +186,44 @@ git push
 Abre la pestaña **Actions** del fork: aparece una ejecución de **[Pruebas unitarias](../glosario/01-fundamentos.md#prueba-unitaria)** con el mensaje del
 commit. Ábrela, pulsa el job **Vitest** y despliega el step **Run npx vitest run --reporter=verbose**.
 
-<!-- SALIDA-ACTIONS: ejecución de «Pruebas unitarias» en verde: lista de steps del job Vitest (Set up job, Run actions/checkout@v7, Run actions/setup-node@v7, Run npm ci, Run npx vitest run --reporter=verbose, Post…, Complete job) y el log del step de Vitest -->
+Desde el terminal del Codespace ves lo mismo con `gh` (los identificadores y tiempos cambian):
+
+```bash
+# Última ejecución y sus steps
+gh run list --workflow pruebas-unitarias.yml --limit 1
+gh run view --job=<ID del job que muestra gh run view>
+```
+
 ```text
-pendiente
+✓ Vitest in 30s (ID 134415921967)
+  ✓ Set up job
+  ✓ Run actions/checkout@v7
+  ✓ Run actions/setup-node@v7
+  ✓ Run npm ci
+  ✓ Run npx vitest run --reporter=verbose
+  ✓ Post Run actions/setup-node@v7
+  ✓ Post Run actions/checkout@v7
+  ✓ Complete job
+```
+
+Log del step **Run npx vitest run --reporter=verbose**:
+
+```text
+Run npx vitest run --reporter=verbose
+npx vitest run --reporter=verbose
+shell: /usr/bin/bash -e {0}
+
+ RUN  v5.1.0 /home/runner/work/testing-automatizacion-agile-201/testing-automatizacion-agile-201/ejercicios/M04-01-primer-workflow
+
+ ✓ tests/contrasena.test.js > esContrasenaValida > acepta 8 caracteres con letras y números 1ms
+ ✓ tests/contrasena.test.js > esContrasenaValida > rechaza 7 caracteres aunque tenga letras y números 0ms
+ ✓ tests/contrasena.test.js > esContrasenaValida > rechaza una contraseña sin números 0ms
+ ✓ tests/contrasena.test.js > esContrasenaValida > rechaza una contraseña sin letras 0ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  22:25:23
+   Duration  107ms (transform 55%, import 26%, tests 10%, worker 9%)
 ```
 
 El log del step de Vitest es la misma salida del paso 1, ahora en una máquina que no es la tuya. Los
@@ -256,10 +300,31 @@ git push
 En **Actions**, la nueva ejecución termina con ✗. Dentro del job **Vitest**, el step de Vitest está en
 rojo con el mismo error; los steps posteriores no se ejecutan.
 
-<!-- SALIDA-ACTIONS: ejecución de «Pruebas unitarias» en rojo: step de Vitest fallido con «Process completed with exit code 1.» y la anotación de error en el resumen de la ejecución -->
+Con `gh run view` del identificador de esa ejecución:
+
 ```text
-pendiente
+X main Pruebas unitarias · 44190000329
+Triggered via push less than a minute ago
+
+JOBS
+X Vitest in 28s (ID 134416540050)
+  ✓ Set up job
+  ✓ Run actions/checkout@v7
+  ✓ Run actions/setup-node@v7
+  ✓ Run npm ci
+  X Run npx vitest run --reporter=verbose
+  - Post Run actions/setup-node@v7
+  ✓ Post Run actions/checkout@v7
+  ✓ Complete job
+
+ANNOTATIONS
+X Process completed with exit code 1.
+Vitest: .github#41
 ```
+
+La anotación **Process completed with exit code 1.** es la que se ve en el resumen de la ejecución. El
+log del step fallido trae el mismo error que tu terminal (`gh run view <ID> --log-failed` lo muestra
+sin abrir el navegador).
 
 Deja la regla como estaba (`LONGITUD_MINIMA = 8`) y súbela: la siguiente ejecución vuelve a verde.
 
@@ -286,9 +351,17 @@ git push
 **Resultado esperado:** en **Actions**, filtrando por el workflow **Pruebas unitarias** (lista de la
 izquierda), no aparece ninguna ejecución nueva para ese commit.
 
-<!-- SALIDA-ACTIONS: lista de ejecuciones del workflow «Pruebas unitarias» tras el push que no toca el ejercicio (sin ejecución nueva) -->
+Desde el terminal, la lista del workflow sigue terminando en el commit «Vuelve a exigir 8 caracteres»:
+
+```bash
+# Ejecuciones de este workflow: no hay ninguna para «Cambio fuera del ejercicio M04-01»
+gh run list --workflow pruebas-unitarias.yml --limit 5
+```
+
 ```text
-pendiente
+completed	success	Vuelve a exigir 8 caracteres	Pruebas unitarias	main	push	44190135821	31s	2026-11-17T22:26:51Z
+completed	failure	Baja la longitud mínima de la contraseña a 6	Pruebas unitarias	main	push	44190000329	32s	2026-11-17T22:26:00Z
+completed	success	Añade el workflow de pruebas unitarias	Pruebas unitarias	main	push	44189822958	33s	2026-11-17T22:24:56Z
 ```
 
 ## Comprueba tu entendimiento
@@ -372,9 +445,13 @@ jobs:
         working-directory: ejercicios/M04-01-primer-workflow
 ```
 
-<!-- SALIDA-ACTIONS: ejecución con la matriz: grafo con los dos jobs «Vitest (Node 22)» y «Vitest (Node 24)» en verde -->
 ```text
-pendiente
+✓ main Pruebas unitarias · 44190243574
+Triggered via push less than a minute ago
+
+JOBS
+✓ Vitest (Node 22) in 25s (ID 134417400479)
+✓ Vitest (Node 24) in 27s (ID 134417401196)
 ```
 
 La matriz multiplica el job por cada valor y los ejecuta a la vez: el tiempo total es el del más lento,
