@@ -1,0 +1,28 @@
+# Solución del lab M04-05 (suite rápida). Copia este fichero a .github/workflows/calidad-pr.yml (raíz del repo).
+# Su job «suite-rapida» es el check que la regla de la rama main exige para fusionar.
+name: Calidad PR
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  suite-rapida:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ejercicios/M04-05-puerta-de-calidad
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        working-directory: .
+      - run: npx playwright install --with-deps chromium
+      # Solo las pruebas etiquetadas @smoke: respuesta rápida en cada pull request
+      - run: npx playwright test --grep @smoke
