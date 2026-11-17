@@ -1,0 +1,26 @@
+# Solución del lab M04-05 (suite completa). Copia este fichero a .github/workflows/suite-nocturna.yml (raíz del repo).
+name: Suite nocturna
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # todos los días a las 03:00 UTC (solo en la rama por defecto)
+  workflow_dispatch: # botón «Run workflow» para lanzarla a mano
+
+jobs:
+  suite-completa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ejercicios/M04-05-puerta-de-calidad
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        working-directory: .
+      - run: npx playwright install --with-deps chromium
+      # Todas las pruebas, con y sin etiqueta
+      - run: npx playwright test
