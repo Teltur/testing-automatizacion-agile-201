@@ -15,7 +15,7 @@ test('la portada carga', { tag: '@smoke' }, async ({ page }) => {
 
 test('ana inicia sesión', { tag: '@smoke' }, async ({ page }) => {
   await entrar(page, 'ana', 'secreta');
-  await expect(page.getByRole('alert')).toHaveText('Hola, ana');
+  await expect(page.getByRole('alert')).toHaveText('Bienvenida, ana');
 });
 
 // Resto de la suite completa
