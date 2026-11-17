@@ -1,0 +1,66 @@
+# Solución del lab M04-07. Copia este fichero a .github/workflows/entorno-efimero.yml (raíz del repo).
+# Cada ejecución del job tiene su propia base de datos: nace con el job y muere con él.
+name: Entorno efímero
+
+on:
+  push:
+    paths:
+      - 'ejercicios/M04-07-entornos-efimeros/**'
+      - '.github/workflows/entorno-efimero.yml'
+  workflow_dispatch:
+
+jobs:
+  api:
+    name: API con PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Contenedores de servicio: GitHub los arranca antes de los pasos y los borra al terminar el job
+    services:
+      db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: libros
+          POSTGRES_PASSWORD: libros
+          POSTGRES_DB: libros
+        ports:
+          - 5432:5432 # accesible desde el runner en localhost:5432
+        options: >-
+          --health-cmd "pg_isready -U libros -d libros"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 15
+
+    # Conexión a la base de datos para psql y para la API
+    env:
+      PGHOST: localhost
+      PGUSER: libros
+      PGPASSWORD: libros
+      PGDATABASE: libros
+
+    defaults:
+      run:
+        working-directory: ejercicios/M04-07-entornos-efimeros
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            ejercicios/M04-07-entornos-efimeros/app/package-lock.json
+
+      # Datos de semilla: el mismo fichero que usa compose.yaml (psql viene en el runner)
+      - name: Cargar la semilla
+        run: psql -v ON_ERROR_STOP=1 -f db/semilla.sql
+
+      - name: Instalar dependencias
+        run: |
+          npm ci
+          npm ci --prefix ejercicios/M04-07-entornos-efimeros/app
+        working-directory: .
+
+      # Con CI=true, la configuración arranca la API (webServer); no hace falta navegador
+      - name: Pruebas de la API
+        run: npx playwright test
