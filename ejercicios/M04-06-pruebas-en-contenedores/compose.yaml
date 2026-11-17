@@ -27,7 +27,7 @@ services:
     volumes:
       - ../..:/repo # el repositorio entero: pruebas, configuración y node_modules
     environment:
-      BASE_URL: http://localhost:3406
+      BASE_URL: http://tablon:3406
       PW_OUTPUT_DIR: /tmp/test-results
       CI: 'true'
     ipc: host # Chromium necesita memoria compartida

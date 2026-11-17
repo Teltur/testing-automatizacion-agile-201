@@ -1,0 +1,33 @@
+# Solución del lab M04-06. Copia este fichero a .github/workflows/contenedores.yml (raíz del repo).
+# El runner trae Docker: el job ejecuta lo mismo que tú en el Codespace.
+name: Pruebas en contenedores
+
+on:
+  push:
+    paths:
+      - 'ejercicios/M04-06-pruebas-en-contenedores/**'
+      - '.github/workflows/contenedores.yml'
+  workflow_dispatch:
+
+jobs:
+  compose:
+    name: Suite en Docker Compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ejercicios/M04-06-pruebas-en-contenedores
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      # node_modules de la raíz: el contenedor de pruebas lo monta con el repositorio
+      - run: npm ci
+        working-directory: .
+      # Levanta la app, ejecuta las pruebas y devuelve el código de salida del servicio «pruebas»
+      - run: docker compose up --exit-code-from pruebas
+      # Apaga y borra los contenedores y la red, pase lo que pase
+      - if: ${{ always() }}
+        run: docker compose down
