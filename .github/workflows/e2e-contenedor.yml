@@ -1,0 +1,24 @@
+# Variante del lab M04-02: el job corre dentro de la imagen oficial de Playwright,
+# que ya trae Node y los navegadores. Copia a .github/workflows/e2e-contenedor.yml si quieres probarla.
+name: E2E en contenedor
+
+on:
+  workflow_dispatch:
+
+jobs:
+  playwright:
+    name: Playwright (imagen oficial)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble # misma versión que @playwright/test
+      options: --user 1001 # el mismo usuario que el runner, dueño de la carpeta de trabajo
+    defaults:
+      run:
+        working-directory: ejercicios/M04-02-e2e-en-el-pipeline
+    steps:
+      - uses: actions/checkout@v7
+      - run: npm ci
+        working-directory: .
+      # Sin "playwright install": los navegadores ya están en la imagen
+      - run: npx playwright test
