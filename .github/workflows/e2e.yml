@@ -1,0 +1,38 @@
+# Solución del lab M04-02. Copia este fichero a .github/workflows/e2e.yml (raíz del repo).
+name: E2E
+
+on:
+  push:
+    paths:
+      - 'ejercicios/M04-02-e2e-en-el-pipeline/**'
+      - '.github/workflows/e2e.yml'
+  pull_request:
+    paths:
+      - 'ejercicios/M04-02-e2e-en-el-pipeline/**'
+      - '.github/workflows/e2e.yml'
+
+jobs:
+  playwright:
+    name: Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ejercicios/M04-02-e2e-en-el-pipeline
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # Dependencias de la raíz (incluye @playwright/test)
+      - run: npm ci
+        working-directory: .
+
+      # Chromium y las librerías del sistema que necesita (el runner no los trae)
+      - run: npx playwright install --with-deps chromium
+
+      # La configuración del ejercicio arranca la app (webServer) y aplica los ajustes de CI
+      - run: npx playwright test
