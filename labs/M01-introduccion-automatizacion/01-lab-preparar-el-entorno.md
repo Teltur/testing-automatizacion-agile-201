@@ -47,10 +47,20 @@ navegadores y todas las herramientas del curso ya instaladas.
 3. Elige la pestaña **Codespaces**.
 4. Pulsa **Create codespace on main**.
 
-**Resultado esperado:** se abre una pestaña nueva con VS Code en el navegador. La primera vez el
-terminal muestra la instalación de dependencias (`scripts/instalar-entorno.sh`, lanzado por el
-devcontainer); espera a que termine y el terminal quede libre en
-`/workspaces/testing-automatizacion-agile-201`.
+**Resultado esperado:** se abre una pestaña nueva con VS Code en el navegador. VS Code aparece
+antes de que el entorno esté instalado: el terminal sigue mostrando la instalación de dependencias
+(`scripts/instalar-entorno.sh`, lanzado por el devcontainer: `npm ci`, Chromium y Cypress) durante
+unos minutos. Espera a que termine con estas líneas:
+
+```text
+Entorno listo. Compruébalo con: npm run verificar
+Running the postStartCommand from devcontainer.json...
+bash scripts/red-docker-codespace.sh || true
+Redes de Compose abiertas: los contenedores ya se ven entre sí.
+```
+
+La última la escribe el script que arregla la red de Docker del Codespace (lo necesitarán los labs
+con contenedores); en algunos Codespaces dice en su lugar que no hace falta nada.
 
 > [!TIP]
 > El Codespace se conserva. Para volver otro día: **Code** → **Codespaces** y pulsa su nombre en
@@ -74,21 +84,23 @@ Ficha del comando: [`npm run verificar`](../comandos-lab.md#verificar).
 > verificar
 > node scripts/verificar-entorno.mjs
 
-OK     Node.js     v22.23.3
+OK     Node.js     v22.23.5
 OK     npm         10.9.9
-OK     Vitest      vitest/5.1.0 linux-x64 node-v22.23.3
+OK     Vitest      vitest/5.1.0 linux-x64 node-v22.23.5
 OK     Playwright  Version 1.65.1
 OK     Cypress     16.3.0
+OK     Chromium    chromium-1255
+OK     Cypress app verificado
 OK     Newman      6.2.3
 OK     Prism       5.16.0
 OK     Allure      3.33.0
-OK     Docker      Docker version 28.5.1, build e180ab8
-OK     GitHub CLI  gh version 2.46.0 (2025-12-13 Ubuntu 2.46.0-4)
+OK     Docker      Docker version 29.9.3-1, build 5457199aa57c45e990c59c89cab5f02b817238d7
+OK     GitHub CLI  gh version 2.104.0 (2026-11-12)
 
 Entorno listo
 ```
 
-Cada línea `OK` es una herramienta que ha respondido con su versión. Vitest, Playwright, [Cypress](../glosario/02-e2e.md#cypress),
+Cada línea `OK` es una herramienta que ha respondido con su versión. `Chromium` y `Cypress app` comprueban además que los navegadores están descargados: el paquete puede estar instalado y el navegador no, si la instalación se cortó. Vitest, Playwright, [Cypress](../glosario/02-e2e.md#cypress),
 [Newman](../glosario/03-apis.md#newman), [Prism](../glosario/03-apis.md#prism) y [Allure](../glosario/04-ci-cd.md#allure) tienen la versión exacta de `package.json`: es lo que hace que tu resultado
 sea igual al de cualquier compañero. Si alguna línea dice `FALTA`, mira «Errores frecuentes».
 

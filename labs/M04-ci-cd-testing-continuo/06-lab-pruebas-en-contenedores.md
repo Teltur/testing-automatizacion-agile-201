@@ -486,10 +486,20 @@ rm -rf test-results
 docker compose down
 ```
 
-<!-- SALIDA-ACTIONS: en un Codespace real, salida de `id -u` y de `ls -l test-results/*/` tras la ejecución con user 1000:1000 (trace.zip propiedad de node) -->
+En un Codespace, con una prueba rota (las fechas cambian):
+
 ```text
-pendiente
+1000
 ```
+
+```text
+total 20
+-rw-rw-rw- 1 node node  1885 Nov 17 23:46 error-context.md
+-rw-rw-rw- 1 node node 14524 Nov 17 23:46 trace.zip
+```
+
+`id -u` da `1000`, el usuario `node` del Codespace. Las evidencias son de `node` y no de `root`, así que
+`rm -rf test-results` las borra sin `sudo`.
 
 En CI el usuario del runner es otro (`1001`): allí se usaría `user: '1001:1001'` o una variable. **La
 regla:** un contenedor que escribe en una carpeta montada escribe con su usuario; fija el usuario o saca las

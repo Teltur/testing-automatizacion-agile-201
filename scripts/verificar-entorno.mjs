@@ -8,6 +8,9 @@ const herramientas = [
   ['Vitest', 'npx --no-install vitest --version'],
   ['Playwright', 'npx --no-install playwright --version'],
   ['Cypress', 'npx --no-install cypress --version --component package'],
+  // Los binarios: el paquete puede estar y el navegador no (instalación cortada)
+  ['Chromium', "ls -d ~/.cache/ms-playwright/chromium-* | head -1 | xargs basename"],
+  ['Cypress app', 'npx --no-install cypress verify >/dev/null && echo verificado'],
   ['Newman', 'npx --no-install newman --version'],
   ['Prism', 'npx --no-install prism --version'],
   ['Allure', 'npx --no-install allure --version'],
