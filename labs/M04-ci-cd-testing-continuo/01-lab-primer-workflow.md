@@ -466,7 +466,7 @@ una matriz convierte «debería funcionar en Node 24» en un [check](../glosario
 | Síntoma | Causa probable | Cómo arreglarlo |
 |---------|----------------|-----------------|
 | Tras el push no aparece nada en **Actions** | Actions sin habilitar en el fork, o el fichero no está en `.github/workflows/` de la raíz | Paso 2; comprueba la ruta con `ls .github/workflows` desde la raíz |
-| `git push` rechazado con «refusing to allow … to create or update workflow … without `workflows` permission» | El token con el que empujas no tiene permiso para tocar workflows | Crea el fichero desde la web del fork (**Add file** → **Create new file**, nombre `.github/workflows/pruebas-unitarias.yml`) y después `git pull` en el Codespace |
+| `git push` rechazado con «refusing to allow an OAuth App to create or update workflow `.github/workflows/pruebas-unitarias.yml` without `workflow` scope» | El token con el que empujas no tiene permiso para tocar workflows | Crea el fichero desde la web del fork (**Add file** → **Create new file**, nombre `.github/workflows/pruebas-unitarias.yml`) y después `git pull` en el Codespace |
 | `npm ci` falla con «The `npm ci` command can only install with an existing package-lock.json» | `npm ci` se ejecuta en la carpeta del ejercicio, que no tiene `package-lock.json` | `npm ci` va en la raíz; solo el step de pruebas lleva `working-directory` |
 | El step de Vitest dice «No test files found» | `working-directory` apunta a otra carpeta | La ruta es relativa a la raíz del repositorio: `ejercicios/M04-01-primer-workflow` |
 | Error de YAML «mapping values are not allowed here» | Sangría mezclada o tabuladores | YAML solo admite espacios; usa dos por nivel, como en el bloque del paso 3 |
